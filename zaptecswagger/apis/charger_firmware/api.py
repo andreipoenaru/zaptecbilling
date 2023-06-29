@@ -1,0 +1,7 @@
+from __future__ import annotations
+
+from swagger_codegen_fork.api.base import BaseApi
+
+from . import get__api_chargerfirmware_installation_installationid
+class ChargerFirmwareApi(BaseApi):
+    get__api_chargerfirmware_installation_installationid = get__api_chargerfirmware_installation_installationid.make_request

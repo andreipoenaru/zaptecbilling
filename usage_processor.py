@@ -1,5 +1,7 @@
 import argparse
+import inquirer
 import json
+import pprint
 import pytz
 
 import pandas as pd
@@ -18,9 +20,9 @@ def is_timezone_naive(d: time | datetime) -> bool:
 
 
 @total_ordering
-class EnergyRate(Enum):
-    LOW = 1
-    HIGH = 2
+class EnergyRate(str, Enum):
+    LOW = 'LowEnergyRate'
+    HIGH = 'HighEnergyRate'
 
     def __lt__(self, other):
         if self.__class__ is other.__class__:
@@ -109,20 +111,43 @@ class ChargeSession:
         assert is_timezone_naive(start_date_time,),\
             'Unexpected timezone for start datetime of charge session %s' % (start_date_time, charge_session,)
 
-        self.optional_energy_details = charge_session.get(ChargeSession.Key.ENERGY_DETAILS)
-
         self.device_id = charge_session[ChargeSession.Key.DEVICE_ID]
         self.device_name = charge_session[ChargeSession.Key.DEVICE_NAME]
         self.energy = energy
         self.end_date_time = pytz.utc.localize(end_date_time).astimezone(ZRH)
         self.start_date_time = pytz.utc.localize(start_date_time).astimezone(ZRH)
 
+        optional_energy_details = charge_session.get(ChargeSession.Key.ENERGY_DETAILS)
+        optional_energy_rate = None
+        comment = ''
+        if optional_energy_details is None:
+            print('The charging session that started on %s, %s and ended on %s, %s is missing energy details.' % (
+                self.start_date_time.strftime('%A'),
+                self.start_date_time,
+                self.end_date_time.strftime('%A'),
+                self.end_date_time))
+            print('Here is the full json:')
+            pprint.pprint(charge_session)
 
-    def get_energy_details(self) -> [EnergyDetail]:
-        assert self.optional_energy_details is not None,\
-            'Unimplemented'
+            answers = inquirer.prompt([
+                inquirer.List(
+                    'energy_rate',
+                    message='What energy rate did this charging session use?',
+                    choices=[er.value for er in EnergyRate]),
+                inquirer.Text(
+                    'comment',
+                    message='Add a comment about your selection:')])
+            optional_energy_rate = EnergyRate(answers['energy_rate'])
+            comment = answers['comment']
 
-        return [EnergyDetail(ed) for ed in self.optional_energy_details]
+        self.optional_energy_details = optional_energy_details
+        self.optional_energy_rate = optional_energy_rate
+        self.comment = comment
+
+
+    def get_optional_energy_details(self) -> [EnergyDetail]:
+        return [EnergyDetail(ed) for ed in self.optional_energy_details]\
+            if self.optional_energy_details is not None else None
 
 
 def process_usage(
@@ -151,6 +176,7 @@ def process_usage(
         TIMESTAMP = 'Timestamp'
         ENERGY = 'Energy'
         ENERGY_RATE = 'EnergyRate'
+        COMMENT = 'Comment'
 
         def __lt__(self, other):
             if self.__class__ is other.__class__:
@@ -161,13 +187,28 @@ def process_usage(
     for charge_session_json in chargehistory_json['Data']:
         charge_session = ChargeSession(charge_session_json)
 
-        for energy_detail in charge_session.get_energy_details():
+        optional_energy_details = charge_session.get_optional_energy_details()
+        if optional_energy_details is None:
+            assert charge_session.optional_energy_rate is not None,\
+                'The charging session is missing both energy details and an explicit energy rate: %s'\
+                    % charge_session_json
+            energy_details_rows.append([
+                charge_session.device_id,
+                charge_session.device_name,
+                None,
+                charge_session.energy,
+                charge_session.optional_energy_rate,
+                charge_session.comment])
+            continue
+
+        for energy_detail in optional_energy_details:
             energy_details_rows.append([
                 charge_session.device_id,
                 charge_session.device_name,
                 energy_detail.timestamp,
                 energy_detail.energy,
-                energy_detail.compute_energy_rate(WEEKDAY_TO_OPTIONAL_HIGH_RATE_INTERVAL)])
+                energy_detail.compute_energy_rate(WEEKDAY_TO_OPTIONAL_HIGH_RATE_INTERVAL),
+                charge_session.comment])
 
     energy_details_df = pd.DataFrame(
         energy_details_rows, columns=[k for k in TableColumns])

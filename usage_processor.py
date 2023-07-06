@@ -239,12 +239,18 @@ if __name__ == '__main__':
         '--weekday_high_rate_interval',
         nargs=2,
         type=time.fromisoformat,
-        help='the high-rate weekdays interval, in the Europe/Zurich time zone, but without explicit time zone info')
+        help='the high-rate weekdays interval, in the Europe/Zurich time zone, '
+        'but without explicit time zone info; if unspecified, the whole weekday '
+        'is considered low-rate',
+        metavar='DATETIME')
     parser.add_argument(
         '--saturday_high_rate_interval',
         nargs=2,
         type=time.fromisoformat,
-        help='the high-rate Saturday interval, in the Europe/Zurich time zone, but without explicit time zone info')
+        help='the high-rate Saturday interval, in the Europe/Zurich time zone, '
+        'but without explicit time zone info; if unspecified, the entire Saturday '
+        'is considered low-rate',
+        metavar='DATETIME')
 
     args = parser.parse_args()
 

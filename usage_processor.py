@@ -252,6 +252,15 @@ def process_usage(
 
     print(summary_df)
 
+    # Drop timezone info because Excel doesn't support datetimes w/ timezone info.
+    energy_details_df[TableColumns.TIMESTAMP] = energy_details_df[TableColumns.TIMESTAMP].apply(
+        lambda d: d.replace(tzinfo=None))
+
+    with pd.ExcelWriter('pandas_to_excel.xlsx') as writer:
+        summary_df.to_excel(writer, sheet_name='Summary')
+        for device_id in sorted(energy_details_df[TableColumns.DEVICE_ID].unique()):
+            energy_details_df[energy_details_df[TableColumns.DEVICE_ID] == device_id].to_excel(writer, sheet_name=device_id)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

@@ -86,11 +86,11 @@ class EnergyDetail:
 
 class ChargeSession:
     class Key(str, Enum):
+        COMMIT_END_DATE_TIME = 'CommitEndDateTime'
         DEVICE_ID = 'DeviceId'
         DEVICE_NAME = 'DeviceName'
         ENERGY = 'Energy'
         ENERGY_DETAILS = 'EnergyDetails'
-        END_DATE_TIME = 'EndDateTime'
         START_DATE_TIME = 'StartDateTime'
 
 
@@ -101,7 +101,7 @@ class ChargeSession:
             assert k.value in charge_session, 'Missing charge session key: %s.' % (k.value,)
 
         energy = charge_session[ChargeSession.Key.ENERGY]
-        end_date_time = datetime.fromisoformat(charge_session[ChargeSession.Key.END_DATE_TIME])
+        end_date_time = datetime.fromisoformat(charge_session[ChargeSession.Key.COMMIT_END_DATE_TIME])
         start_date_time = datetime.fromisoformat(charge_session[ChargeSession.Key.START_DATE_TIME])
 
         assert energy >= 0,\

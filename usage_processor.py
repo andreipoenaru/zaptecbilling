@@ -30,21 +30,30 @@ class EnergyRate(str, Enum):
         return NotImplemented
 
 
+class UsageInterval:
+    def __init__(self, start_date_time: datetime, end_date_time: datetime):
+        assert is_timezone_naive(start_date_time),\
+            'the start of the usage reporting interval should not have time zone info, but it has: %s.' % (start_date_time.tzinfo,)
+        assert is_timezone_naive(end_date_time),\
+            'the end of the usage reporting interval should not have time zone info, but it has: %s.' % (end_date_time.tzinfo,)
+        assert start_date_time < end_date_time,\
+            'the usage reporting interval needs to start before it ends, but %s is not before %s.' % (start_date_time, end_date_time)
+
+        self.start_date_time = pytz.utc.localize(start_date_time).astimezone(ZRH)
+        self.end_date_time = pytz.utc.localize(end_date_time).astimezone(ZRH)
+
+
 class HighRateInterval:
-    def __init__(self, start: time, end: time):
-        assert is_timezone_naive(start),\
-            'the start of the high rate interval should not have time zone info, but it has: %s.' % (start.tzinfo,)
-        assert is_timezone_naive(end),\
-            'the end of the high rate interval should not have time zone info, but it has: %s.' % (end.tzinfo,)
-        assert start < end,\
-            'the high rate interval needs to start before it ends, but %s is not before %s.' % (start, end)
+    def __init__(self, start_time: time, end_time: time):
+        assert is_timezone_naive(start_time),\
+            'the start of the high rate interval should not have time zone info, but it has: %s.' % (start_time.tzinfo,)
+        assert is_timezone_naive(end_time),\
+            'the end of the high rate interval should not have time zone info, but it has: %s.' % (end_time.tzinfo,)
+        assert start_time < end_time,\
+            'the high rate interval needs to start before it ends, but %s is not before %s.' % (start_time, end_time)
 
-        self.start = start
-        self.end = end
-
-
-    def includes(self, t: time):
-        return self.start < t and t <= self.end
+        self.start_time = start_time
+        self.end_time = end_time
 
 
 class EnergyDetail:
@@ -81,7 +90,15 @@ class EnergyDetail:
 
         if optional_high_rate_interval is None:
             return EnergyRate.LOW
-        return EnergyRate.HIGH if optional_high_rate_interval.includes(earliest_timestamp.time()) else EnergyRate.LOW
+        return EnergyRate.HIGH\
+            if optional_high_rate_interval.start_time < earliest_timestamp.time()\
+            and earliest_timestamp.time() <= optional_high_rate_interval.end_time\
+            else EnergyRate.LOW
+
+
+    def is_in_usage_interval(self, usage_interval: UsageInterval):
+        earliest_timestamp = self.timestamp - EnergyDetail.TIMESTAMP_RECORD_DELAY
+        return usage_interval.start_date_time < self.timestamp and earliest_timestamp <= usage_interval.end_date_time
 
 
 class ChargeSession:
@@ -94,7 +111,7 @@ class ChargeSession:
         START_DATE_TIME = 'StartDateTime'
 
 
-    def __init__(self, charge_session: dict):
+    def __init__(self, charge_session: dict, usage_interval: UsageInterval):
         for k in ChargeSession.Key:
             if k.value == ChargeSession.Key.ENERGY_DETAILS:
                 continue  # This key is optional.
@@ -121,6 +138,11 @@ class ChargeSession:
         optional_energy_rate = None
         comment = ''
         if optional_energy_details is None:
+            assert usage_interval.start_date_time <= self.start_date_time\
+                and self.end_date_time <= usage_interval.end_date_time,\
+                'Charge sessions without energy details that don\'t fall entirely inside '\
+                'the usage interval are not supported: %s' % (charge_session,)
+
             print('The charging session that started on %s, %s and ended on %s, %s is missing energy details.' % (
                 self.start_date_time.strftime('%A'),
                 self.start_date_time,
@@ -152,6 +174,7 @@ class ChargeSession:
 
 def process_usage(
         chargehistory_file_path: str,
+        usage_interval: UsageInterval,
         weekday_high_rate_interval: HighRateInterval = None,
         saturday_high_rate_interval: HighRateInterval = None):
 
@@ -185,7 +208,7 @@ def process_usage(
 
     energy_details_rows = []
     for charge_session_json in chargehistory_json['Data']:
-        charge_session = ChargeSession(charge_session_json)
+        charge_session = ChargeSession(charge_session_json, usage_interval)
 
         optional_energy_details = charge_session.get_optional_energy_details()
         if optional_energy_details is None:
@@ -202,6 +225,8 @@ def process_usage(
             continue
 
         for energy_detail in optional_energy_details:
+            if not energy_detail.is_in_usage_interval(usage_interval):
+                continue
             energy_details_rows.append([
                 charge_session.device_id,
                 charge_session.device_name,
@@ -236,6 +261,16 @@ if __name__ == '__main__':
         'chargehistory_file_path',
         help='the path to the Zaptec chargehistory API response, in JSON format')
     parser.add_argument(
+        'usage_interval_start',
+        type=datetime.fromisoformat,
+        help='the start of the usage reporting period, in the Europe/Zurich time zone, '
+        'but without explicit time zone info; charging slots before this timestamp are ignored')
+    parser.add_argument(
+        'usage_interval_end',
+        type=datetime.fromisoformat,
+        help='the end of the usage reporting period, in the Europe/Zurich time zone, '
+        'but without explicit time zone info; charging slots before this timestamp are ignored')
+    parser.add_argument(
         '--weekday_high_rate_interval',
         nargs=2,
         type=time.fromisoformat,
@@ -256,6 +291,7 @@ if __name__ == '__main__':
 
     process_usage(
         chargehistory_file_path=args.chargehistory_file_path,
+        usage_interval=UsageInterval(args.usage_interval_start, args.usage_interval_end),
         weekday_high_rate_interval=
             HighRateInterval(args.weekday_high_rate_interval[0], args.weekday_high_rate_interval[1])
             if args.weekday_high_rate_interval is not None

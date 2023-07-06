@@ -221,7 +221,9 @@ def process_usage(
         values=TableColumns.ENERGY,
         index=[TableColumns.DEVICE_ID, TableColumns.DEVICE_NAME],
         columns=[TableColumns.ENERGY_RATE],
-        aggfunc=sum)
+        aggfunc=sum,
+        margins=True,
+        margins_name='Total Energy')
 
     print(summary_df)
 

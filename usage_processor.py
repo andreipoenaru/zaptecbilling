@@ -232,7 +232,7 @@ def process_usage(
             TableColumns.ENERGY: 'Energie (kWh)',
             TableColumns.ENERGY_RATE: 'Energietarif',
             TableColumns.START_DATE_TIME: 'Gestartet (Europe/Zürich)',
-            TableColumns.COMMIT_END_DATE_TIME: 'Beended (Europe/Zürich)',
+            TableColumns.COMMIT_END_DATE_TIME: 'Beendet (Europe/Zürich)',
             TableColumns.CHARGE_SESSION_ENERGY: 'Ladevorgang Energie (kWh)',
             TableColumns.COMMENT: "Hinweis",
         },

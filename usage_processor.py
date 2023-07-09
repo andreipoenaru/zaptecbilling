@@ -186,6 +186,7 @@ class ChargeSession:
 def process_usage(
         chargehistory_file_path: str,
         usage_interval: UsageInterval,
+        output_excel_file_name: str,
         weekday_high_rate_interval: HighRateInterval = None,
         saturday_high_rate_interval: HighRateInterval = None):
 
@@ -317,7 +318,7 @@ def process_usage(
     energy_details_df[TableColumns.COMMIT_END_DATE_TIME] = energy_details_df[TableColumns.COMMIT_END_DATE_TIME].apply(
         lambda d: d.replace(tzinfo=None))
 
-    with pd.ExcelWriter('pandas_to_excel.xlsx') as writer:
+    with pd.ExcelWriter(output_excel_file_name) as writer:
         summary_df.columns = [c.get_text(LOCALE) for c in summary_df.columns]
         summary_df.index.names = [c.get_text(LOCALE) for c in summary_df.index.names]
         summary_df.index = summary_df.index.set_levels(
@@ -353,6 +354,9 @@ if __name__ == '__main__':
         help='the end of the usage reporting period, in the Europe/Zurich time zone, '
         'but without explicit time zone info; charging slots before this timestamp are ignored')
     parser.add_argument(
+        'output_excel_file_name',
+        help='the path to the output Excel file')
+    parser.add_argument(
         '--weekday_high_rate_interval',
         nargs=2,
         type=time.fromisoformat,
@@ -381,4 +385,5 @@ if __name__ == '__main__':
         saturday_high_rate_interval=
             HighRateInterval(args.saturday_high_rate_interval[0], args.saturday_high_rate_interval[1])
             if args.saturday_high_rate_interval is not None
-            else None)
+            else None,
+        output_excel_file_name=args.output_excel_file_name)

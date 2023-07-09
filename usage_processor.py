@@ -109,7 +109,7 @@ class EnergyDetail:
 
     def is_in_usage_interval(self, usage_interval: UsageInterval):
         earliest_timestamp = self.timestamp - EnergyDetail.TIMESTAMP_RECORD_DELAY
-        return usage_interval.start_date_time < self.timestamp and earliest_timestamp <= usage_interval.end_date_time
+        return usage_interval.start_date_time < earliest_timestamp and earliest_timestamp <= usage_interval.end_date_time
 
 
 class ChargeSession:

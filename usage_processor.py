@@ -12,6 +12,7 @@ from enum import Enum
 from functools import total_ordering
 
 
+LOCALE = 'de-CH'
 ZRH = pytz.timezone('Europe/Zurich')
 
 
@@ -28,6 +29,16 @@ class EnergyRate(str, Enum):
         if self.__class__ is other.__class__:
             return self.value < other.value
         return NotImplemented
+
+    def get_text(self, locale: str):
+            return ENERGY_RATE_LOCALES[locale][self]
+
+ENERGY_RATE_LOCALES = {
+    'de-CH': {
+        EnergyRate.LOW: 'Niedertarif',
+        EnergyRate.HIGH: 'Hochtarif',
+    },
+}
 
 
 class UsageInterval:
@@ -206,6 +217,20 @@ def process_usage(
                 return self.value < other.value
             return NotImplemented
 
+        def get_text(self, locale: str):
+            return TABLE_COLUMNS_LOCALES[locale][self]
+
+    TABLE_COLUMNS_LOCALES = {
+        'de-CH': {
+            TableColumns.DEVICE_ID: 'Ladestation Seriennummer',
+            TableColumns.DEVICE_NAME: 'Ladestation Name',
+            TableColumns.TIMESTAMP: 'Zeitpunkt (Europe/Zürich)',
+            TableColumns.ENERGY: 'Strom (kWh)',
+            TableColumns.ENERGY_RATE: 'Stromtarif',
+            TableColumns.COMMENT: "Hinweis",
+        },
+    }
+
     energy_details_rows = []
     for charge_session_json in chargehistory_json['Data']:
         charge_session = ChargeSession(charge_session_json, usage_interval)
@@ -235,6 +260,24 @@ def process_usage(
                 energy_detail.compute_energy_rate(WEEKDAY_TO_OPTIONAL_HIGH_RATE_INTERVAL),
                 charge_session.comment])
 
+    @total_ordering
+    class SummaryTableLabels(str, Enum):
+        TOTAL_ENERGY = 'TotalEnergy'
+
+        def __lt__(self, other):
+            if self.__class__ is other.__class__:
+                return self.value < other.value
+            return NotImplemented
+
+        def get_text(self, locale: str):
+            return SUMMARY_TABLE_LABELS_LOCALES[locale][self]
+
+    SUMMARY_TABLE_LABELS_LOCALES = {
+        'de-CH': {
+            SummaryTableLabels.TOTAL_ENERGY: 'Gesamtstrom (kWh)'
+        },
+    }
+
     energy_details_df = pd.DataFrame(
         energy_details_rows, columns=[k for k in TableColumns])
     summary_df = pd.pivot_table(
@@ -248,18 +291,30 @@ def process_usage(
         columns=[TableColumns.ENERGY_RATE],
         aggfunc=sum,
         margins=True,
-        margins_name='Total Energy')
+        margins_name=SummaryTableLabels.TOTAL_ENERGY)
 
     print(summary_df)
+
+    # Export the data to an .xlsx file; only formatting changes from here on.
 
     # Drop timezone info because Excel doesn't support datetimes w/ timezone info.
     energy_details_df[TableColumns.TIMESTAMP] = energy_details_df[TableColumns.TIMESTAMP].apply(
         lambda d: d.replace(tzinfo=None))
 
     with pd.ExcelWriter('pandas_to_excel.xlsx') as writer:
+        summary_df.columns = [c.get_text(LOCALE) for c in summary_df.columns]
+        summary_df.index.names = [c.get_text(LOCALE) for c in summary_df.index.names]
+        summary_df.index = summary_df.index.set_levels(
+            [l.get_text(LOCALE) if isinstance(l, Enum) else l
+                for l in summary_df.index.levels[0]],
+                level=0,
+                verify_integrity=True)
         summary_df.to_excel(writer, sheet_name='Summary')
+
         for device_id in sorted(energy_details_df[TableColumns.DEVICE_ID].unique()):
-            energy_details_df[energy_details_df[TableColumns.DEVICE_ID] == device_id].to_excel(writer, sheet_name=device_id)
+            device_energy_details_df = energy_details_df[energy_details_df[TableColumns.DEVICE_ID] == device_id]
+            device_energy_details_df.columns = [c.get_text(LOCALE) for c in device_energy_details_df.columns]
+            device_energy_details_df.to_excel(writer, sheet_name=device_id)
 
 
 if __name__ == '__main__':

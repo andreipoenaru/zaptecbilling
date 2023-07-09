@@ -210,6 +210,9 @@ def process_usage(
         TIMESTAMP = 'Timestamp'
         ENERGY = 'Energy'
         ENERGY_RATE = 'EnergyRate'
+        START_DATE_TIME = 'StartDateTime'
+        COMMIT_END_DATE_TIME = 'CommitEndDateTime'
+        CHARGE_SESSION_ENERGY = 'ChargeSessionEnergy'
         COMMENT = 'Comment'
 
         def __lt__(self, other):
@@ -227,6 +230,9 @@ def process_usage(
             TableColumns.TIMESTAMP: 'Zeitpunkt (Europe/Zürich)',
             TableColumns.ENERGY: 'Energie (kWh)',
             TableColumns.ENERGY_RATE: 'Energietarif',
+            TableColumns.START_DATE_TIME: 'Gestartet (Europe/Zürich)',
+            TableColumns.COMMIT_END_DATE_TIME: 'Beended (Europe/Zürich)',
+            TableColumns.CHARGE_SESSION_ENERGY: 'Ladevorgang Energie (kWh)',
             TableColumns.COMMENT: "Hinweis",
         },
     }
@@ -246,6 +252,9 @@ def process_usage(
                 None,
                 charge_session.energy,
                 charge_session.optional_energy_rate,
+                charge_session.start_date_time,
+                charge_session.end_date_time,
+                charge_session.energy,
                 charge_session.comment])
             continue
 
@@ -258,6 +267,9 @@ def process_usage(
                 energy_detail.timestamp,
                 energy_detail.energy,
                 energy_detail.compute_energy_rate(WEEKDAY_TO_OPTIONAL_HIGH_RATE_INTERVAL),
+                charge_session.start_date_time,
+                charge_session.end_date_time,
+                charge_session.energy,
                 charge_session.comment])
 
     @total_ordering
@@ -300,17 +312,23 @@ def process_usage(
     # Drop timezone info because Excel doesn't support datetimes w/ timezone info.
     energy_details_df[TableColumns.TIMESTAMP] = energy_details_df[TableColumns.TIMESTAMP].apply(
         lambda d: d.replace(tzinfo=None))
+    energy_details_df[TableColumns.START_DATE_TIME] = energy_details_df[TableColumns.START_DATE_TIME].apply(
+        lambda d: d.replace(tzinfo=None))
+    energy_details_df[TableColumns.COMMIT_END_DATE_TIME] = energy_details_df[TableColumns.COMMIT_END_DATE_TIME].apply(
+        lambda d: d.replace(tzinfo=None))
 
     with pd.ExcelWriter('pandas_to_excel.xlsx') as writer:
         summary_df.columns = [c.get_text(LOCALE) for c in summary_df.columns]
         summary_df.index.names = [c.get_text(LOCALE) for c in summary_df.index.names]
         summary_df.index = summary_df.index.set_levels(
-            [l.get_text(LOCALE) if isinstance(l, Enum) else l
-                for l in summary_df.index.levels[0]],
+            [x.get_text(LOCALE) if isinstance(x, Enum) else x
+                for x in summary_df.index.levels[0]],
                 level=0,
                 verify_integrity=True)
         summary_df.to_excel(writer, sheet_name='Summary')
 
+        energy_details_df[TableColumns.ENERGY_RATE] = energy_details_df[TableColumns.ENERGY_RATE].apply(
+            lambda er: er.get_text(LOCALE))
         for device_id in sorted(energy_details_df[TableColumns.DEVICE_ID].unique()):
             device_energy_details_df = energy_details_df[energy_details_df[TableColumns.DEVICE_ID] == device_id]
             device_energy_details_df.columns = [c.get_text(LOCALE) for c in device_energy_details_df.columns]

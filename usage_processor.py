@@ -225,8 +225,8 @@ def process_usage(
             TableColumns.DEVICE_ID: 'Ladestation Seriennummer',
             TableColumns.DEVICE_NAME: 'Ladestation Name',
             TableColumns.TIMESTAMP: 'Zeitpunkt (Europe/Zürich)',
-            TableColumns.ENERGY: 'Strom (kWh)',
-            TableColumns.ENERGY_RATE: 'Stromtarif',
+            TableColumns.ENERGY: 'Energie (kWh)',
+            TableColumns.ENERGY_RATE: 'Energietarif',
             TableColumns.COMMENT: "Hinweis",
         },
     }
@@ -274,7 +274,7 @@ def process_usage(
 
     SUMMARY_TABLE_LABELS_LOCALES = {
         'de-CH': {
-            SummaryTableLabels.TOTAL_ENERGY: 'Gesamtstrom (kWh)'
+            SummaryTableLabels.TOTAL_ENERGY: 'Gesamtenergie (kWh)'
         },
     }
 

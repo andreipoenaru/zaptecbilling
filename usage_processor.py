@@ -14,6 +14,7 @@ from functools import total_ordering
 
 LOCALE = 'de-CH'
 ZRH = pytz.timezone('Europe/Zurich')
+TIMESTAMP_RECORD_DELAY = timedelta(seconds=1)
 
 
 def is_timezone_naive(d: time | datetime) -> bool:
@@ -68,10 +69,6 @@ class HighRateInterval:
 
 
 class EnergyDetail:
-    # The energy detail recording delay.
-    TIMESTAMP_RECORD_DELAY = timedelta(seconds=1)
-
-
     class Key(str, Enum):
         ENERGY = 'Energy'
         TIMESTAMP = 'Timestamp'
@@ -96,7 +93,7 @@ class EnergyDetail:
 
 
     def compute_energy_rate(self, weekday_to_optional_high_rate_interval: [HighRateInterval | None]) -> EnergyRate:
-        earliest_timestamp = self.timestamp - EnergyDetail.TIMESTAMP_RECORD_DELAY
+        earliest_timestamp = self.timestamp - TIMESTAMP_RECORD_DELAY
         optional_high_rate_interval = weekday_to_optional_high_rate_interval[earliest_timestamp.weekday()]
 
         if optional_high_rate_interval is None:
@@ -108,7 +105,7 @@ class EnergyDetail:
 
 
     def is_in_usage_interval(self, usage_interval: UsageInterval):
-        earliest_timestamp = self.timestamp - EnergyDetail.TIMESTAMP_RECORD_DELAY
+        earliest_timestamp = self.timestamp - TIMESTAMP_RECORD_DELAY
         return usage_interval.start_date_time < earliest_timestamp and earliest_timestamp <= usage_interval.end_date_time
 
 
@@ -122,7 +119,7 @@ class ChargeSession:
         START_DATE_TIME = 'StartDateTime'
 
 
-    def __init__(self, charge_session: dict, usage_interval: UsageInterval):
+    def __init__(self, charge_session: dict):
         for k in ChargeSession.Key:
             if k.value == ChargeSession.Key.ENERGY_DETAILS:
                 continue  # This key is optional.
@@ -145,9 +142,18 @@ class ChargeSession:
         self.end_date_time = pytz.utc.localize(end_date_time).astimezone(ZRH)
         self.start_date_time = pytz.utc.localize(start_date_time).astimezone(ZRH)
 
-        optional_energy_details = charge_session.get(ChargeSession.Key.ENERGY_DETAILS)
+        self.raw_optional_energy_details = charge_session.get(ChargeSession.Key.ENERGY_DETAILS)
+        self.optional_energy_details = None
+        self.optional_energy_rate = None
+        self.comment = ''
+
+
+    def compute_energy_details_or_rate(self, usage_interval: UsageInterval):
+        optional_energy_details = [EnergyDetail(ed) for ed in self.raw_optional_energy_details]\
+            if self.raw_optional_energy_details is not None else None
         optional_energy_rate = None
         comment = ''
+
         if optional_energy_details is None:
             assert usage_interval.start_date_time <= self.start_date_time\
                 and self.end_date_time <= usage_interval.end_date_time,\
@@ -176,11 +182,6 @@ class ChargeSession:
         self.optional_energy_details = optional_energy_details
         self.optional_energy_rate = optional_energy_rate
         self.comment = comment
-
-
-    def get_optional_energy_details(self) -> [EnergyDetail]:
-        return [EnergyDetail(ed) for ed in self.optional_energy_details]\
-            if self.optional_energy_details is not None else None
 
 
 def process_usage(
@@ -240,10 +241,16 @@ def process_usage(
 
     energy_details_rows = []
     for charge_session_json in chargehistory_json['Data']:
-        charge_session = ChargeSession(charge_session_json, usage_interval)
+        charge_session = ChargeSession(charge_session_json)
 
-        optional_energy_details = charge_session.get_optional_energy_details()
-        if optional_energy_details is None:
+        if charge_session.end_date_time <= usage_interval.start_date_time\
+                or usage_interval.end_date_time <= charge_session.start_date_time - TIMESTAMP_RECORD_DELAY:
+            # This charge session is outside the usage interval.
+            continue
+
+        charge_session.compute_energy_details_or_rate(usage_interval)
+
+        if charge_session.optional_energy_details is None:
             assert charge_session.optional_energy_rate is not None,\
                 'The charging session is missing both energy details and an explicit energy rate: %s'\
                     % charge_session_json
@@ -259,7 +266,7 @@ def process_usage(
                 charge_session.comment])
             continue
 
-        for energy_detail in optional_energy_details:
+        for energy_detail in charge_session.optional_energy_details:
             if not energy_detail.is_in_usage_interval(usage_interval):
                 continue
             energy_details_rows.append([

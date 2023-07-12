@@ -142,15 +142,15 @@ class ChargeSession:
         self.end_date_time = pytz.utc.localize(end_date_time).astimezone(ZRH)
         self.start_date_time = pytz.utc.localize(start_date_time).astimezone(ZRH)
 
-        self.raw_optional_energy_details = charge_session.get(ChargeSession.Key.ENERGY_DETAILS)
+        self.raw_charge_session = charge_session
         self.optional_energy_details = None
         self.optional_energy_rate = None
         self.comment = ''
 
 
     def compute_energy_details_or_rate(self, usage_interval: UsageInterval):
-        optional_energy_details = [EnergyDetail(ed) for ed in self.raw_optional_energy_details]\
-            if self.raw_optional_energy_details is not None else None
+        optional_energy_details = [EnergyDetail(ed) for ed in self.raw_charge_session[ChargeSession.Key.ENERGY_DETAILS]]\
+            if len(self.raw_charge_session.get(ChargeSession.Key.ENERGY_DETAILS, [])) > 0 else None
         optional_energy_rate = None
         comment = ''
 
@@ -158,7 +158,7 @@ class ChargeSession:
             assert usage_interval.start_date_time <= self.start_date_time\
                 and self.end_date_time <= usage_interval.end_date_time,\
                 'Charge sessions without energy details that don\'t fall entirely inside '\
-                'the usage interval are not supported: %s' % (charge_session,)
+                'the usage interval are not supported: %s' % (self.raw_charge_session,)
 
             print('The charging session that started on %s, %s and ended on %s, %s is missing energy details.' % (
                 self.start_date_time.strftime('%A'),
@@ -166,7 +166,7 @@ class ChargeSession:
                 self.end_date_time.strftime('%A'),
                 self.end_date_time))
             print('Here is the full json:')
-            pprint.pprint(charge_session)
+            pprint.pprint(self.raw_charge_session)
 
             answers = inquirer.prompt([
                 inquirer.List(

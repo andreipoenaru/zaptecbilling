@@ -51,8 +51,8 @@ class UsageInterval:
         assert start_date_time < end_date_time,\
             'the usage reporting interval needs to start before it ends, but %s is not before %s.' % (start_date_time, end_date_time)
 
-        self.start_date_time = pytz.utc.localize(start_date_time).astimezone(ZRH)
-        self.end_date_time = pytz.utc.localize(end_date_time).astimezone(ZRH)
+        self.start_date_time = ZRH.localize(start_date_time)
+        self.end_date_time = ZRH.localize(end_date_time)
 
 
 class HighRateInterval:

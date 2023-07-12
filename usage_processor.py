@@ -14,7 +14,7 @@ from functools import total_ordering
 
 LOCALE = 'de-CH'
 ZRH = pytz.timezone('Europe/Zurich')
-TIMESTAMP_RECORD_DELAY = timedelta(seconds=1)
+TIMESTAMP_RECORD_DELAY = timedelta(seconds=5)
 
 
 def is_timezone_naive(d: time | datetime) -> bool:

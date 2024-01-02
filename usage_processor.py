@@ -283,6 +283,8 @@ def process_usage(
     @total_ordering
     class SummaryTableLabels(str, Enum):
         TOTAL_ENERGY = 'TotalEnergy'
+        LOW_ENERGY = 'LowEnergy'
+        HIGH_ENERGY = 'HighEnergy'
 
         def __lt__(self, other):
             if self.__class__ is other.__class__:
@@ -294,7 +296,9 @@ def process_usage(
 
     SUMMARY_TABLE_LABELS_LOCALES = {
         'de-CH': {
-            SummaryTableLabels.TOTAL_ENERGY: 'Gesamtenergie (kWh)'
+            SummaryTableLabels.TOTAL_ENERGY: 'Gesamtenergie (kWh)',
+            SummaryTableLabels.LOW_ENERGY: 'Niedertarif Energie (kWh)',
+            SummaryTableLabels.HIGH_ENERGY: 'Hochtarif Energie (kWh)',
         },
     }
 
@@ -313,6 +317,8 @@ def process_usage(
         aggfunc=sum,
         margins=True,
         margins_name=SummaryTableLabels.TOTAL_ENERGY)
+    summary_df.columns = [SummaryTableLabels.LOW_ENERGY if c == EnergyRate.LOW else c for c in summary_df.columns]
+    summary_df.columns = [SummaryTableLabels.HIGH_ENERGY if c == EnergyRate.HIGH else c for c in summary_df.columns]
 
     print(summary_df)
 

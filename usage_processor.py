@@ -346,6 +346,8 @@ def process_usage(
             lambda er: er.get_text(LOCALE))
         for device_id in sorted(energy_details_df[TableColumns.DEVICE_ID].unique()):
             device_energy_details_df = energy_details_df[energy_details_df[TableColumns.DEVICE_ID] == device_id]
+            device_energy_details_df = device_energy_details_df.sort_values(
+                by=[TableColumns.START_DATE_TIME, TableColumns.COMMIT_END_DATE_TIME, TableColumns.TIMESTAMP])
             device_energy_details_df.columns = [c.get_text(LOCALE) for c in device_energy_details_df.columns]
             device_energy_details_df.to_excel(writer, sheet_name=device_id, index=False)
 

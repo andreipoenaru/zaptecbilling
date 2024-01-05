@@ -342,7 +342,7 @@ def process_usage(
                 level=0,
                 verify_integrity=True)
         summary_df.to_excel(writer, sheet_name='Summary')
-        auto_adjust_xlsx_column_width(summary_df, writer, sheet_name="Summary", margin=0)
+        auto_adjust_xlsx_column_width(summary_df, writer, sheet_name="Summary", margin=2)
 
         energy_details_df[TableColumns.ENERGY_RATE] = energy_details_df[TableColumns.ENERGY_RATE].apply(
             lambda er: er.get_text(LOCALE))
@@ -352,7 +352,7 @@ def process_usage(
                 by=[TableColumns.START_DATE_TIME, TableColumns.COMMIT_END_DATE_TIME, TableColumns.TIMESTAMP])
             device_energy_details_df.columns = [c.get_text(LOCALE) for c in device_energy_details_df.columns]
             device_energy_details_df.to_excel(writer, sheet_name=device_id, index=False)
-            auto_adjust_xlsx_column_width(device_energy_details_df, writer, sheet_name=device_id, margin=0, index=False)
+            auto_adjust_xlsx_column_width(device_energy_details_df, writer, sheet_name=device_id, margin=2, index=False)
 
 
 if __name__ == '__main__':

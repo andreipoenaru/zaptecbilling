@@ -341,8 +341,8 @@ def process_usage(
                 for x in summary_df.index.levels[0]],
                 level=0,
                 verify_integrity=True)
-        summary_df.to_excel(writer, sheet_name='Summary')
-        auto_adjust_xlsx_column_width(summary_df, writer, sheet_name="Summary", margin=2)
+        summary_df.to_excel(writer, sheet_name='Überblick')
+        auto_adjust_xlsx_column_width(summary_df, writer, sheet_name="Überblick", margin=2)
 
         energy_details_df[TableColumns.ENERGY_RATE] = energy_details_df[TableColumns.ENERGY_RATE].apply(
             lambda er: er.get_text(LOCALE))

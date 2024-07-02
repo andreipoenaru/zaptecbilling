@@ -163,3 +163,7 @@ cython_debug/
 .DS_Store
 
 *.xlsx
+
+bin/
+share/
+pyvenv.cfg

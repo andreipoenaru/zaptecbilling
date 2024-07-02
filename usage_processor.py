@@ -12,14 +12,11 @@ from enum import Enum
 from functools import total_ordering
 from UliPlot.XLSX import auto_adjust_xlsx_column_width
 
+from common import UsageInterval, ZRH, is_timezone_naive
+
 
 LOCALE = 'de-CH'
-ZRH = pytz.timezone('Europe/Zurich')
 TIMESTAMP_RECORD_DELAY = timedelta(seconds=5)
-
-
-def is_timezone_naive(d: time | datetime) -> bool:
-    return d.tzinfo is None or d.tzinfo.utcoffset(d) is None
 
 
 @total_ordering
@@ -41,19 +38,6 @@ ENERGY_RATE_LOCALES = {
         EnergyRate.HIGH: 'Hochtarif',
     },
 }
-
-
-class UsageInterval:
-    def __init__(self, start_date_time: datetime, end_date_time: datetime):
-        assert is_timezone_naive(start_date_time),\
-            'the start of the usage reporting interval should not have time zone info, but it has: %s.' % (start_date_time.tzinfo,)
-        assert is_timezone_naive(end_date_time),\
-            'the end of the usage reporting interval should not have time zone info, but it has: %s.' % (end_date_time.tzinfo,)
-        assert start_date_time < end_date_time,\
-            'the usage reporting interval needs to start before it ends, but %s is not before %s.' % (start_date_time, end_date_time)
-
-        self.start_date_time = ZRH.localize(start_date_time)
-        self.end_date_time = ZRH.localize(end_date_time)
 
 
 class HighRateInterval:

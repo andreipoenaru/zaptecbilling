@@ -299,7 +299,7 @@ def process_usage(
         index=[TableColumns.DEVICE_ID, TableColumns.DEVICE_NAME],
         columns=[TableColumns.ENERGY_RATE],
         fill_value=0,
-        aggfunc=sum,
+        aggfunc='sum',
         margins=True,
         margins_name=SummaryTableLabels.TOTAL_ENERGY)
     summary_df.columns = [SummaryTableLabels.LOW_ENERGY if c == EnergyRate.LOW else c for c in summary_df.columns]

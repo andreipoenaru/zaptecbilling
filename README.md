@@ -3,7 +3,10 @@
 
 ## Fetching the data
 
-`fetcher.py` is very much WIP, but you can download the raw data at [https://api.zaptec.com/help/index.html#/ChargeHistory/get_api_chargehistory](https://api.zaptec.com/help/index.html#/ChargeHistory/get_api_chargehistory).
+Invoke `usage_fetcher.py`, e.g.:
+```
+$ python3 usage_fetcher.py owner@email.com installation-id 2024-01-01 2024-07-01 3 zaptec-2024H1-response.json
+```
 
 
 ## Processing the data

@@ -1,9 +1,12 @@
 blessed==1.20.0
+certifi==2024.6.2
+charset-normalizer==3.3.2
 contourpy==1.2.1
 cycler==0.12.1
 editor==1.6.6
 et-xmlfile==1.1.0
 fonttools==4.53.0
+idna==3.7
 inquirer==3.3.0
 kiwisolver==1.4.5
 matplotlib==3.9.0
@@ -15,10 +18,13 @@ pillow==10.4.0
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 pytz==2024.1
+ratelimit==2.2.1
 readchar==4.1.0
+requests==2.32.3
 runs==1.2.2
 six==1.16.0
 tzdata==2024.1
 UliPlot==0.2.2
+urllib3==2.2.2
 wcwidth==0.2.13
 xmod==1.8.1

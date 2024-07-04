@@ -21,7 +21,7 @@ def process_usage(
         usage_interval: UsageInterval,
         output_excel_file_name: str,
         weekday_high_rate_interval: HighRateInterval = None,
-        saturday_high_rate_interval: HighRateInterval = None):
+        saturday_high_rate_interval: HighRateInterval = None) -> None:
 
     # The high-rate interval for a date or datetime .weekday().
     WEEKDAY_TO_OPTIONAL_HIGH_RATE_INTERVAL = [

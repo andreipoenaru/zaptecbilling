@@ -1,3 +1,4 @@
+import copy
 import inquirer
 import pprint
 import pytz
@@ -26,6 +27,9 @@ class UsageInterval:
 
         self.start_date_time = ZRH.localize(start_date_time)
         self.end_date_time = ZRH.localize(end_date_time)
+
+    def copy(self):
+        return copy.copy(self)
 
 
 @total_ordering

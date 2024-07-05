@@ -1,7 +1,7 @@
 #!/bin/sh
 
-source args.sh
-
+source args.sh \
+&& \
 python3 usage_fetcher.py $USERNAME $INSTALLATION_ID $USAGE_INTERVAL_START \
     $USAGE_INTERVAL_END $NUM_CHARGING_STATIONS "$CHARGEHISTORY_FILE_NAME" \
 && \

@@ -1,6 +1,17 @@
 # zaptecbilling
 
 
+## Using `run.sh`
+Create an `args.sh` file and set the value of the arguments:
+```
+$ cp args.sh.tmpl args.sh
+```
+
+Afterwards simply run the script and you will be prompted for the Zaptec owner account password:
+```
+$ ./run.sh
+```
+
 ## Fetching the data
 
 Invoke `usage_fetcher.py`, e.g.:

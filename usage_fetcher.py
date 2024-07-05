@@ -150,8 +150,9 @@ def determine_fetch_interval(
         for charge_session_json in chargehistory_json[DATA_KEY]:
             charge_session = ChargeSession(charge_session_json)
 
-            if usage_interval.end_date_time <= charge_session.end_date_time:
-                device_id_set.add(charge_session.device_id)
+            assert usage_interval.end_date_time <= charge_session.end_date_time,\
+                'expected the end time of the charging session to be after the usage time: %s' % (charge_session.end_date_time,)
+            device_id_set.add(charge_session.device_id)
 
     assert len(device_id_set) >= num_charging_stations,\
         'didn\'t manage to find a charging session after the usage interval for all charging stations: %s' % (device_id_set,)
@@ -195,7 +196,7 @@ def fetch_usage(
                 default='No')])
         if answers['overwrite_file'] != 'Yes':
             print('Data not saved.')
-            return
+            exit(1)
 
     with open(output_chargehistory_file_name, 'w') as chargehistory_file:
         json.dump(chargehistory_json, chargehistory_file, indent=2)

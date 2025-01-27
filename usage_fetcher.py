@@ -127,8 +127,12 @@ def determine_fetch_interval(
     assert usage_interval.end_date_time <= current_date_time,\
         'the usage interval ends in the future'
 
-    FETCH_INCREMENT_TIMEDELTA = min(timedelta(weeks=1), current_date_time - usage_interval.end_date_time)
-    MAX_TOTAL_ADDED_TIMEDELTA = min(timedelta(weeks=4), current_date_time - usage_interval.end_date_time)
+    FETCH_INCREMENT_TIMEDELTA = min(
+        timedelta(weeks=1),
+        current_date_time - usage_interval.end_date_time)
+    MAX_TOTAL_ADDED_TIMEDELTA = min(
+        timedelta(weeks=8),
+        current_date_time - usage_interval.end_date_time + FETCH_INCREMENT_TIMEDELTA)
 
     fetch_interval = usage_interval.copy()
     fetch_interval_step = usage_interval.copy()

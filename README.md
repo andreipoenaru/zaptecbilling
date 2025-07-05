@@ -16,7 +16,7 @@ $ ./run.sh
 
 Invoke `usage_fetcher.py`, e.g.:
 ```
-$ python3 usage_fetcher.py owner@email.com installation-id 2024-01-01 2024-07-01 3 zaptec-2024H1-response.json
+$ python3 usage_fetcher.py owner@email.com installation-id 2024-01-01 2024-07-01 zaptec-2024H1-response.json
 ```
 
 

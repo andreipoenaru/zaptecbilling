@@ -132,7 +132,7 @@ class ChargeSession:
         assert is_timezone_naive(end_date_time,),\
             'Unexpected timezone for end datetime (%s) of charge session %s' % (end_date_time, charge_session,)
         assert is_timezone_naive(start_date_time,),\
-            'Unexpected timezone for start datetime of charge session %s' % (start_date_time, charge_session,)
+            'Unexpected timezone for start datetime (%s) of charge session %s' % (start_date_time, charge_session,)
 
         self.device_id = charge_session[ChargeSession.Key.DEVICE_ID]
         self.device_name = charge_session[ChargeSession.Key.DEVICE_NAME]

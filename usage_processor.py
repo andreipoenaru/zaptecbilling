@@ -71,6 +71,8 @@ def process_usage(
         },
     }
 
+    has_energy_rates = weekday_high_rate_interval is not None or saturday_high_rate_interval is not None
+
     energy_details_rows = []
     for charge_session_json in chargehistory_json['Data']:
         charge_session = ChargeSession(charge_session_json)
@@ -90,9 +92,10 @@ def process_usage(
                 charge_session.device_id,
                 charge_session.device_name,
                 None,
-                charge_session.energy,
-                charge_session.optional_energy_rate,
-                charge_session.start_date_time,
+                charge_session.energy] +
+                ([charge_session.optional_energy_rate]\
+                    if has_energy_rates else []) +
+                [charge_session.start_date_time,
                 charge_session.end_date_time,
                 charge_session.energy,
                 charge_session.comment])
@@ -105,9 +108,10 @@ def process_usage(
                 charge_session.device_id,
                 charge_session.device_name,
                 energy_detail.timestamp,
-                energy_detail.energy,
-                energy_detail.compute_energy_rate(WEEKDAY_TO_OPTIONAL_HIGH_RATE_INTERVAL),
-                charge_session.start_date_time,
+                energy_detail.energy] +
+                ([energy_detail.compute_energy_rate(WEEKDAY_TO_OPTIONAL_HIGH_RATE_INTERVAL)]\
+                    if has_energy_rates else []) +
+                [charge_session.start_date_time,
                 charge_session.end_date_time,
                 charge_session.energy,
                 charge_session.comment])
@@ -134,17 +138,20 @@ def process_usage(
         },
     }
 
+    energy_details_df_columns = [k for k in TableColumns]
+    if not has_energy_rates:
+        energy_details_df_columns = list(filter(lambda k: k != TableColumns.ENERGY_RATE, energy_details_df_columns))
     energy_details_df = pd.DataFrame(
-        energy_details_rows, columns=[k for k in TableColumns])
+        energy_details_rows, columns=energy_details_df_columns)
     summary_df = pd.pivot_table(
         energy_details_df[[
             TableColumns.DEVICE_ID,
             TableColumns.DEVICE_NAME,
-            TableColumns.ENERGY,
-            TableColumns.ENERGY_RATE]],
+            TableColumns.ENERGY] +
+            ([TableColumns.ENERGY_RATE] if has_energy_rates else [])],
         values=TableColumns.ENERGY,
         index=[TableColumns.DEVICE_ID, TableColumns.DEVICE_NAME],
-        columns=[TableColumns.ENERGY_RATE],
+        columns=[TableColumns.ENERGY_RATE] if has_energy_rates else None,
         fill_value=0,
         aggfunc='sum',
         margins=True,
@@ -175,8 +182,9 @@ def process_usage(
         summary_df.to_excel(writer, sheet_name='Überblick')
         auto_adjust_xlsx_column_width(summary_df, writer, sheet_name="Überblick", margin=2)
 
-        energy_details_df[TableColumns.ENERGY_RATE] = energy_details_df[TableColumns.ENERGY_RATE].apply(
-            lambda er: er.get_text(LOCALE))
+        if TableColumns.ENERGY_RATE in energy_details_df.columns:
+            energy_details_df[TableColumns.ENERGY_RATE] = energy_details_df[TableColumns.ENERGY_RATE].apply(
+                lambda er: er.get_text(LOCALE))
         for device_id in sorted(energy_details_df[TableColumns.DEVICE_ID].unique()):
             device_energy_details_df = energy_details_df[energy_details_df[TableColumns.DEVICE_ID] == device_id]
             device_energy_details_df = device_energy_details_df.sort_values(

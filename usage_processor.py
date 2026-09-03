@@ -143,12 +143,16 @@ def process_usage(
         energy_details_df_columns = list(filter(lambda k: k != TableColumns.ENERGY_RATE, energy_details_df_columns))
     energy_details_df = pd.DataFrame(
         energy_details_rows, columns=energy_details_df_columns)
+
+    pivot_input_df = energy_details_df[[
+        TableColumns.DEVICE_ID,
+        TableColumns.DEVICE_NAME,
+        TableColumns.ENERGY] +
+        ([TableColumns.ENERGY_RATE] if has_energy_rates else [])].copy()
+    pivot_input_df[TableColumns.ENERGY] = pivot_input_df[TableColumns.ENERGY].astype(float)
+
     summary_df = pd.pivot_table(
-        energy_details_df[[
-            TableColumns.DEVICE_ID,
-            TableColumns.DEVICE_NAME,
-            TableColumns.ENERGY] +
-            ([TableColumns.ENERGY_RATE] if has_energy_rates else [])],
+        pivot_input_df,
         values=TableColumns.ENERGY,
         index=[TableColumns.DEVICE_ID, TableColumns.DEVICE_NAME],
         columns=[TableColumns.ENERGY_RATE] if has_energy_rates else None,
